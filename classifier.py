@@ -4,6 +4,7 @@ from os.path import isfile, join
 import numpy as np
 import sqlite3
 import json
+import base64
 con = sqlite3.connect('faces.db', check_same_thread=False)
 
 
@@ -33,12 +34,15 @@ def update_listed_files(file, label):
 
     image = face_recognition.load_image_file(file)
     encoding = face_recognition.face_encodings(image)[0]
+    with open(file, 'rb') as file:
+        b64 = base64.b64encode(file.read()).decode('utf-8')
+        print(type(b64))
     cur = con.cursor()
     try:
-        cur.execute("INSERT INTO data (name, encoding) VALUES (?, ?)",(label,json.dumps(list(encoding))))
+        cur.execute("INSERT INTO data (name, b64, encoding) VALUES (?, ?, ?)",(label,b64, json.dumps(list(encoding))))
     except:
-        cur.execute("CREATE TABLE data (id integer primary key AUTOINCREMENT, name varchar(100), encoding text)")
-        cur.execute("INSERT INTO data (name, encoding) VALUES (?, ?)",(label,json.dumps(list(encoding))))
+        cur.execute("CREATE TABLE data (id integer primary key AUTOINCREMENT, name varchar(100), b64 text, encoding text)")
+        cur.execute("INSERT INTO data (name, b64, encoding) VALUES (?, ?, ?)",(label,b64,json.dumps(list(encoding))))
 
     con.commit()
 
@@ -64,5 +68,4 @@ def compare_image(image):
         best_match_index = np.argmin(face_distances)
         if matches[best_match_index]:
             name = known_face_names[best_match_index]
-    print(name)
-    return name
+    return f"{name} {round((1-min(face_distances))*100,2)}%"
