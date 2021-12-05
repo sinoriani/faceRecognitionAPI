@@ -38,31 +38,55 @@ def get_request_file(request):
 
 @app.route('/upload_save_picture', methods=['POST'])
 def upload_file():
-    file = get_request_file(request)
-    # print(len(file.read()))
+    # file = get_request_file(request)
     
-    if type(file) is dict and 'error' in file:
-        return jsonify(file), 422
-    if 'label' not in request.form:
+    # if type(file) is dict and 'error' in file:
+    #     return jsonify(file), 422
+    if 'base64' not in request.json:
+        return jsonify({'error':"please incldue a base64 field"}), 422
+    if 'label' not in request.json:
         return jsonify({'error':'Please include a label field in your request'}), 422
     
-    # print(len(file.read()))
-    filename = request.form['label'] + ' -'+ secure_filename(file.filename)
-    filename = uuid.uuid4().hex + '.' + file.filename.split('.')[-1]
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    update_listed_files(file_path, request.form['label'])
+    # save b64 to file
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid.uuid4().hex +".jpeg")
+
+    from PIL import Image
+    import io
+    image = base64.b64decode(request.json.get('base64').encode())       
+    # fileName = 'test.jpeg'
+
+    img = Image.open(io.BytesIO(image))
+    img.save(file_path, 'jpeg')
+
+
+    # with open( file_path, "wb") as fh:
+    #     fh.write(base64.decodebytes(request.json.get('base64').encode()))
+    # filename = request.form['label'] + ' -'+ secure_filename(file.filename)
+    # filename = uuid.uuid4().hex + '.' + file.filename.split('.')[-1]
+    # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    # file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    update_listed_files(file_path, request.json['label'])
+    print('saved image', request.json['label'])
     return jsonify({"message":"File saved successfully"}), 200
 
 
 @app.route('/classify_picture', methods=['POST'])
 def classify_picture():
-    file = get_request_file(request)
+    # file = get_request_file(request)
+    base64_image = request.json.get('base64').encode()
 
-    if 'error' in file:
-        return jsonify(file), 422
+    if 'base64' not in request.json:
+        return jsonify({'error':"please incldue a base64 field"}), 422
     else:
-        result = compare_image(file)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid.uuid4().hex +".png")
+        with open( file_path, "wb") as fh:
+            fh.write(base64.decodebytes(request.json.get('base64').encode()))
+         
+        result = compare_image(file_path)
+        print('name classified: ', result)
+
+        os.remove(file_path)
+
         return jsonify({"name":result}), 200
 
 
@@ -71,10 +95,10 @@ def classify_picture():
 def my_pictures():
     label = request.args.get('label')
     label = unquote(label)
-    print(label)
     all_images = get_all_images(label)
-    return jsonify(all_images)
+    print("GET images:", label)
+    return jsonify({"result":all_images}); 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True,host='0.0.0.0',port=5000)
+    app.run(debug=True,host='0.0.0.0',port=5001)

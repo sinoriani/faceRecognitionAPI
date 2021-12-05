@@ -8,4 +8,7 @@ def get_all_images(label):
     
     cur.execute("SELECT b64 FROM data WHERE upper(name) = ?",(label.upper(),))
     result = cur.fetchall()
-    return result
+    res = []
+    for r in result:
+        res.append(r[0])
+    return res

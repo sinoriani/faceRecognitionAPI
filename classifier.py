@@ -36,7 +36,7 @@ def update_listed_files(file, label):
     encoding = face_recognition.face_encodings(image)[0]
     with open(file, 'rb') as file:
         b64 = base64.b64encode(file.read()).decode('utf-8')
-        print(type(b64))
+        # print(type(b64))
     cur = con.cursor()
     try:
         cur.execute("INSERT INTO data (name, b64, encoding) VALUES (?, ?, ?)",(label,b64, json.dumps(list(encoding))))
@@ -57,10 +57,12 @@ def compare_image(image):
     refresh_data()
 
     unknown_image = face_recognition.load_image_file(image)
-    unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
-
+    try:
+        unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
+    except:
+        return "Inconnu"
     matches = face_recognition.compare_faces(known_face_encodings, unknown_encoding)
-    name = "Unknown"
+    name = "Inconnu"
 
     # Or instead, use the known face with the smallest distance to the new face
     if matches:
@@ -68,4 +70,4 @@ def compare_image(image):
         best_match_index = np.argmin(face_distances)
         if matches[best_match_index]:
             name = known_face_names[best_match_index]
-    return f"{name} {round((1-min(face_distances))*100,2)}%"
+    return f"{name} {str(round((1-min(face_distances))*100,2))+'%' if name != 'Inconnu' else ''}"
