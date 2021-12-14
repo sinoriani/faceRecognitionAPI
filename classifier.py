@@ -30,13 +30,13 @@ def refresh_data():
 
 
 def update_listed_files(file, label):
-    # onlyfiles = [f for f in listdir('images/') if isfile(join('images/', f))]
 
     image = face_recognition.load_image_file(file)
     encoding = face_recognition.face_encodings(image)[0]
+
     with open(file, 'rb') as file:
         b64 = base64.b64encode(file.read()).decode('utf-8')
-        # print(type(b64))
+
     cur = con.cursor()
     try:
         cur.execute("INSERT INTO data (name, b64, encoding) VALUES (?, ?, ?)",(label,b64, json.dumps(list(encoding))))
@@ -70,4 +70,5 @@ def compare_image(image):
         best_match_index = np.argmin(face_distances)
         if matches[best_match_index]:
             name = known_face_names[best_match_index]
+            
     return f"{name} {str(round((1-min(face_distances))*100,2))+'%' if name != 'Inconnu' else ''}"
