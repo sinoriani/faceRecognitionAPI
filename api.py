@@ -88,6 +88,51 @@ def blur_picture():
     return jsonify({"result":base64.b64encode(buffer).decode('utf-8')}), 200
 
 
+
+@app.route('/black_white_picture', methods=['POST'])
+def black_white_picture():
+    base64_image = request.json.get('base64').encode()
+
+    if 'base64' not in request.json:
+        return jsonify({'error':"please incldue a base64 field"}), 422
+    
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid.uuid4().hex +".png")
+    with open( file_path, "wb") as fh:
+        fh.write(base64.decodebytes(request.json.get('base64').encode()))
+    
+    image = cv2.imread(file_path)
+
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    retval, buffer = cv2.imencode('.png', image)
+    cv2.imwrite(file_path, image)
+
+    return jsonify({"result":base64.b64encode(buffer).decode('utf-8')}), 200
+
+
+
+@app.route('/negative_picture', methods=['POST'])
+def negative_picture():
+    base64_image = request.json.get('base64').encode()
+
+    if 'base64' not in request.json:
+        return jsonify({'error':"please incldue a base64 field"}), 422
+    
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid.uuid4().hex +".png")
+    with open( file_path, "wb") as fh:
+        fh.write(base64.decodebytes(request.json.get('base64').encode()))
+    
+    image = cv2.imread(file_path)
+
+    image = cv2.bitwise_not(image)
+
+    retval, buffer = cv2.imencode('.png', image)
+    cv2.imwrite(file_path, image)
+
+    return jsonify({"result":base64.b64encode(buffer).decode('utf-8')}), 200
+
+
+
 @app.route('/my_pictures', methods=['GET'])
 def my_pictures():
     label = request.args.get('label')
